@@ -4,6 +4,7 @@ source "./helpers.sh"
 
 main() {
     preamble
+    check_deps
     disk_format
     install_base
     install_stage2
@@ -20,6 +21,7 @@ preamble() {
     echo "Welcome to Razza's Arch Linux Bootstrap script."
     echo
     echo "Before you begin, please make sure you've done some preflight tasks:"
+    echo "- You have booted in UEFI mode."
     echo "- You are connected to the internet."
     echo "- Install target drive is connected."
     echo "- LVM volumes on the drive are disabled."
@@ -29,6 +31,12 @@ preamble() {
     echo -n "Press ENTER to continue."
 
     read -r -s
+}
+
+check_deps() {
+    if [ ! -d /sys/firmware/efi/efivars ]; then
+        fatal "Missing UEFI firmware"
+    fi
 }
 
 disk_format() {
