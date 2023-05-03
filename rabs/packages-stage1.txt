@@ -1,0 +1,9 @@
+base
+base-devel
+linux
+linux-firmware
+networkmanager
+neovim
+btrfs-progs
+cryptsetup
+sudo

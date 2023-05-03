@@ -24,6 +24,11 @@ fatal() {
     exit "${2:-1}"
 }
 
+##
+# assert_root
+#
+# Checks if this program is run as root and aborts otherwise.
+#
 assert_root() {
     [ "${EUID}" -eq 0 ] && return
     fatal "This script needs to be executed as root."

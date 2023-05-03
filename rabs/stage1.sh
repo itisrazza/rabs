@@ -1,5 +1,12 @@
 #!/bin/bash
 
+#
+# Stage 1: Disk formatting and Arch Linux bootstrap
+#
+# This file formats the disk, installs the essential Arch Linux packages,
+# and hands off control to Stage 2.
+#
+
 source "./helpers.sh"
 
 main() {
@@ -118,39 +125,15 @@ perform_format() {
     section "Disk Formatting"
 
     echo "Formatting ${DISK_LABEL}"
+    format_gpt || fatal "Failed to create partition layout."
 
-    echo "Create new parition layout"
+    format_esp || fatal "Failed to format EFI system parititon."
+    format_boot_part || fatal "Failed to format boot partition."
+    format_root_part || fatal "Failed to format root partition."
+    create_root_subvol || fatal "Failed to create root subvolumes."
 
-    get_part 0
-    local part1="$GET_PART_RET"
-
-    get_part 1
-    local part2="$GET_PART_RET"
-
-    get_part 2
-    local part3="$GET_PART_RET"
-
-    echo "Format ESP partition - FAT32 @ ${part1}"
-    echo "Format boot partition - ext4 @ ${part2}"
-    echo "Format / partition as LUKS @ ${part3}"
-    echo "Format LUKS partitions as btrfs"
-    
-    echo "Mount btrfs partition -> /"
-    echo "Create btrfs subvolumes"
-    echo "  /home"
-    echo "  /root"
-    echo "  /snapshots"
-
-    echo "Unmount btrfs partition"
-    echo "Remount btrfs /root subvolume"
-
-    echo "Mount boot parition       -> /boot"
-    echo "Mount ESP parition        -> /boot/efi"
-    echo "Mount home subvolume      -> /home"
-    echo "Mount snapshots subvolume -> /snapshots"
-
-    echo "Create swap partition -> /snapshots/.swap"
-    echo "Mount swap partition"
+    mount_target_fs || fatal "Failed to mount target file systems."
+    create_swapfile || fatal "Failed to create swap file."
 }
 
 validate_disk() {
@@ -167,6 +150,82 @@ get_part() {
     export GET_PART_RET
     GET_PART_RET="$(fdisk -l "${DISK_LABEL}" | awk "NR==$((10 + $1))" | awk '{ print $1; }')"
 }
+
+format_gpt() {
+    echo "Create new parition layout"
+}
+
+format_esp() {
+    get_part 0
+    local part_label="$GET_PART_RET"
+
+    echo "Format ESP partition - FAT32 @ ${part_label}"
+}
+
+format_boot_part() {
+    get_part 1
+    local part_label="$GET_PART_RET"
+
+    echo "Format boot partition - ext4 @ ${part_label}"
+}
+
+format_root_part() {
+    get_part 2
+    local part_label="$GET_PART_RET"
+
+    format_root_part_askpass
+
+    echo "Format / partition as LUKS @ ${part_label}"
+}
+
+format_root_part_askpass() {
+    while [ -z "$DISK_ENCRYPT_KEY" ]; do
+        section "Disk Formatting"
+        echo
+        echo "You may now pick a password for the system partition."
+        echo "This password will be requested every time this computer starts up."
+        echo
+        echo "You may also leave a blank password, where you can set it up later."
+        echo
+        
+        read -r -s -p "Encryption password: " enc_pass
+        read -r -s -p "Encrpytion password (again): " enc_pass_again
+
+        if [ "$enc_pass" != "$enc_pass_again" ]; then
+            echo -n "Passwords mismatch."
+            read -r -s
+        else
+            DISK_ENCRYPT_KEY="$enc_pass"
+            export DISK_ENCRYPT_KEY
+        fi
+    done
+}
+
+create_root_subvol() {
+    echo "Mount btrfs partition -> /"
+    echo "Create btrfs subvolumes"
+    echo "  /home"
+    echo "  /root"
+    echo "  /snapshots"
+    echo "Unmount btrfs partition"
+}
+
+mount_target_fs() {
+    echo "Remount btrfs /root subvolume"
+    echo "Mount boot parition       -> /boot"
+    echo "Mount ESP parition        -> /boot/efi"
+    echo "Mount home subvolume      -> /home"
+    echo "Mount snapshots subvolume -> /snapshots"
+}
+
+create_swapfile() {
+    echo "Create swap file -> /snapshots/.swap"
+    echo "Mount swap file"
+}
+
+#
+# Entry point
+#
 
 assert_root
 main
