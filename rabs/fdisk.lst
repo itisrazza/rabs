@@ -1,0 +1,18 @@
+g
+n
+1
+
++512M
+t
+EFI System
+n
+2
+
++1024M
+t
+Linux filesystem
+n
+3
+
+
+w

@@ -57,16 +57,14 @@ disk_format() {
 
 install_base() {
     section "Installing Essential Packages"
-    return
-    
+    echo
     xargs pacstrap -K /mnt < packages-stage1.txt || fatal "Failed to install essential packages."
     genfstab -U /mnt >> /mnt/etc/fstab || fatal "Failed to create /etc/fstab."
 }
 
 install_stage2() {
     section "Configuring System"
-    return
-
+    echo
     cp -r . /mnt/root/.archbs || fatal "Failed to copy installer files onto root drive."
     arch-chroot /mnt/root/.archbs/stage2.sh || failed "Failed to run installer on chroot."
 }
@@ -152,21 +150,37 @@ get_part() {
 }
 
 format_gpt() {
-    echo "Create new parition layout"
+    section "Disk Formatting"
+    echo
+    echo "Creating new partition table."
+    echo
+
+    fdisk "${DISK_LABEL}" < fdisk.lst
+    return $?
 }
 
 format_esp() {
     get_part 0
     local part_label="$GET_PART_RET"
 
-    echo "Format ESP partition - FAT32 @ ${part_label}"
+    section "Disk Formatting"
+    echo
+    echo "Formatting EFI system partition."
+    echo
+    mkfs.fat -F 32 -n ESP "${part_label}"
+    return $?
 }
 
 format_boot_part() {
     get_part 1
     local part_label="$GET_PART_RET"
 
-    echo "Format boot partition - ext4 @ ${part_label}"
+    section "Disk Formatting"
+    echo
+    echo "Formatting boot partition."
+    echo
+    mkfs.ext4 -L "linux-boot" "${part_label}"
+    return $?
 }
 
 format_root_part() {
@@ -174,8 +188,14 @@ format_root_part() {
     local part_label="$GET_PART_RET"
 
     format_root_part_askpass
-
-    echo "Format / partition as LUKS @ ${part_label}"
+    section "Disk Formatting"
+    echo
+    echo "Formatting root partition."
+    echo
+    echo -n "${DISK_ENCRYPT_KEY}" | cryptsetup luksFormat -d - "${part_label}" || return $?
+    echo -n "${DISK_ENCRYPT_KEY}" | cryptsetup open -d - "${part_label}" sysroot || return $?
+    mkfs.btrfs -L linux-root /dev/mapper/sysroot
+    return $?
 }
 
 format_root_part_askpass() {
@@ -202,20 +222,37 @@ format_root_part_askpass() {
 }
 
 create_root_subvol() {
-    echo "Mount btrfs partition -> /"
-    echo "Create btrfs subvolumes"
-    echo "  /home"
-    echo "  /root"
-    echo "  /snapshots"
-    echo "Unmount btrfs partition"
+    section "Disk Formatting"
+    echo
+    echo "Creating subvolumes."
+    echo
+
+    mount /dev/mapper/sysroot /mnt || return $?
+    btrfs subvolume create /mnt/home || return $?
+    btrfs subvolume create /mnt/home || return $?
+    btrfs subvolume create /mnt/snapshots || return $?
+
+    umount -R /mnt
+    return $?
 }
 
 mount_target_fs() {
-    echo "Remount btrfs /root subvolume"
-    echo "Mount boot parition       -> /boot"
-    echo "Mount ESP parition        -> /boot/efi"
-    echo "Mount home subvolume      -> /home"
-    echo "Mount snapshots subvolume -> /snapshots"
+    get_part 0
+    local esp_part_label="$GET_PART_RET"
+    get_part 1
+    local boot_part_label="$GET_PART_RET"
+    
+    section "Disk Formatting"
+    echo
+    echo "Mounting file systems."
+    echo
+    mount -o subvol=/root /dev/mapper/sysroot /mnt || return $?
+    mkdir -p /mnt/boot /mnt/home /mnt/snapshots || return $?
+    mount -o subvol=/home      /dev/mapper/sysroot /mnt/home || return $?
+    mount -o subvol=/snapshots /dev/mapper/sysroot /mnt/snapshots || return $?
+    mount "${boot_part_label}" /mnt/boot || return $?
+    mkdir -p /mnt/boot/efi || return $?
+    mount "${esp_part_label}" /mnt/boot/efi || return $?
 }
 
 create_swapfile() {
