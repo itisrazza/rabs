@@ -1,0 +1,38 @@
+name: Makefile CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Build install scripts
+      run: make
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v2.5.2
+      with:
+        node-version: 18.x
+    
+    - name: Install website builder
+      run: npm install
+      working-directory: site
+      
+    - name: Build website
+      run: make site/dist
+      
+    - name: Deploy website
+      uses: peaceiris/actions-gh-pages@v3.9.3
+      with:
+        github_token: ${{ github.token }}
+        publish_dir: ./site/dist
+        cname: rabs.razza.io
+        
