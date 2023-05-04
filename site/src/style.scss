@@ -1,0 +1,85 @@
+:root {
+    background: rgba(27, 30, 32);
+    color: rgba(252, 252, 252);
+    font-family: "Noto Sans", sans-serif;
+}
+
+a {
+    color: rgba(29, 153, 243);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    margin: 1em 0 0.25em;
+}
+
+p {
+    margin: 0.75em 0;
+}
+
+.container {
+    margin-left: auto;
+    margin-right: auto;
+    min-width: 300px;
+    max-width: 768px;
+}
+
+.install-commands {
+    display: block;
+    background: black;
+    color: #CCCCCC;
+    padding: 8px;
+    font-family: "IBM", "Hack", monospace;
+    font-size: 16px;
+
+    .line::before {
+        content: "# ";
+    }
+
+    a {
+        text-decoration: none;
+    }
+}
+
+body>header {
+    padding-top: 64px;
+    padding-bottom: 64px;
+
+    h1 {
+        font-size: 0;
+
+        .title {
+            display: block;
+            font-size: 24px;
+            font-family: "Hack", monospace;
+            margin-top: 16px;
+
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            display: block;
+            font-size: 16px;
+            font-weight: 400;
+        }
+    }
+}
+
+body>main {
+    background: rgba(35, 38, 41);
+    padding: 8px;
+    border-radius: 8px;
+}
+
+body>footer {
+    font-size: 12px;
+}
+
+@font-face {
+    font-family: "IBM";
+    src: url("./WebPlus_IBM_VGA_8x16.woff");
+}
