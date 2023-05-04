@@ -10,7 +10,7 @@
 # Prints a section title.
 #
 section() {
-    clear
+    [ -z "$NO_CLEAR" ] || clear
     echo -e "==> ${1}"
 }
 

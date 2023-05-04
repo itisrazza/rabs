@@ -42,8 +42,10 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-cd rabs && exec ./stage1.sh
+cd rabs || exit 1
+./stage1.sh | tee installer.log
+cd ..
+exit 0
 
-exit 1
 # explicitly exit here
 # compressed archive follows

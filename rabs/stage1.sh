@@ -155,7 +155,7 @@ format_gpt() {
     echo "Creating new partition table."
     echo
 
-    fdisk "${DISK_LABEL}" < fdisk.lst
+    fdisk -w always -W always "${DISK_LABEL}" < fdisk.lst
     return $?
 }
 
@@ -209,7 +209,9 @@ format_root_part_askpass() {
         echo
         
         read -r -s -p "Encryption password: " enc_pass
+        echo
         read -r -s -p "Encrpytion password (again): " enc_pass_again
+        echo
 
         if [ "$enc_pass" != "$enc_pass_again" ]; then
             echo -n "Passwords mismatch."
