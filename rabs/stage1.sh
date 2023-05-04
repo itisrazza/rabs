@@ -228,7 +228,7 @@ create_root_subvol() {
     echo
 
     mount /dev/mapper/sysroot /mnt || return $?
-    btrfs subvolume create /mnt/home || return $?
+    btrfs subvolume create /mnt/root || return $?
     btrfs subvolume create /mnt/home || return $?
     btrfs subvolume create /mnt/snapshots || return $?
 
